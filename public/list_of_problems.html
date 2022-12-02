@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <title>Список всех проблем</title>
+  <script>
+	var url = 'http://localhost:3000/list_of_problems.html/';
+	
+	function queryHandbook(request) {
+		function reqListener(event) {
+			var data = JSON.parse(this.responseText);			
+			console.log(data);
+			var table = document.getElementById("table_data");
+			console.log(table);
+			table.innerHTML='';
+			console.log(table);
+
+			if (data.rowCount > 0) {
+				var header = table.createTHead();
+				var hrow = header.insertRow();
+				for (var i = 0; i < data.fields.length; ++i) {
+					var cell = hrow.insertCell();
+					cell.innerHTML = data.fields[i].name;
+				}
+				for (var i = 0; i < data.rowCount; ++i){
+					var newRow = table.insertRow();
+					for (j in data.rows[i]){
+						var cell = newRow.insertCell();
+						cell.innerHTML = data.rows[i][j];
+					}
+				}
+			}
+
+			
+		}
+		var oReq = new XMLHttpRequest();
+		oReq.addEventListener("load", reqListener);
+		oReq.open("GET", request);
+		oReq.send();
+	}
+  </script>
+  <style>
+	table {
+		border: 1px solid grey;
+		width: 100%;
+		border-collapse: collapse;
+		table-layout: fixed;
+	}
+	th {
+		border: 1px solid grey;
+		font-weight: normal;
+		color: black;
+		padding: 10px 15px;
+	}
+	td {
+		border: 1px solid grey;
+		color: black;
+		border-top: 1px solid grey;
+		padding: 10px 15px;		
+		word-wrap: break-word;
+	}
+	tr:nth-child(2n) {background: #DCDCDC;} 
+	tr:hover { background-color: #A9A9A9; }
+  </style>
+</head>
+<body onload = "queryHandbook(url)">
+	<div id="table_div">
+		<table id="table_data">
+		</table>
+	</div>
+	<script>
+	var socket = new WebSocket("ws://localhost:8181/ws");
+	socket.onopen = function() {
+		console.log("Соединение установлено.");
+	};
+
+	socket.onclose = function(event) {
+		if (event.wasClean) {
+			console.log('Соединение закрыто чисто');
+		} else {
+			console.log('Обрыв соединения'); // например, "убит" процесс сервера
+		}
+		console.log('Код: ' + event.code + ' причина: ' + event.reason);
+	};
+
+	socket.onmessage = function(event) {
+        console.log("Получены данные " + event.data);
+        queryHandbook(url);
+    };
+  </script>
+</body>
+</html>

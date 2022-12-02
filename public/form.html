@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <title>Форма</title>
+  <script>
+   
+  </script>
+</head>
+<body>
+ <form id="new_problem_form" method="post"> 
+  <p>
+    <label for="fio">ФИО: </label>
+    <input type="text" id="fio" name="fio">
+  </p>
+  <p>
+    <label for="phone">Телефон: </label>
+    <input type="tel" placeholder="+X(XXX)XXX-XX-XX" id="phone" name="phone"/>
+  </p>
+  <p>
+    <label for="problem_desc">Описание проблемы:</label>
+    <textarea id="problem_desc" name="problem_desc"></textarea>
+  </p>
+  <p>
+   <input type="submit" value="Отправить" />
+  </p>
+ </form>
+ <script>
+	var socket = new WebSocket("ws://localhost:8181/ws");
+	socket.onopen = function() {
+		console.log("Соединение установлено.");
+	};
+
+	socket.onclose = function(event) {
+		if (event.wasClean) {
+			console.log('Соединение закрыто чисто');
+		} else {
+			console.log('Обрыв соединения'); // например, "убит" процесс сервера
+		}
+		console.log('Код: ' + event.code + ' причина: ' + event.reason);
+	};
+
+	new_problem_form.onsubmit = function(){	    
+		socket.send(JSON.stringify({
+			page_name: window.location.pathname.split("/").pop(),
+			fio: this.elements.fio.value, 
+			phone: this.elements.phone.value,
+			problem_desc: this.elements.problem_desc.value
+		}));
+		return false;
+	}
+  </script>
+</body>
+</html>

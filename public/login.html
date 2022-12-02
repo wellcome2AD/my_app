@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+    <style type="text/css">
+        .fieldset-auto-width {
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+<form action="/session/create" method="POST">
+    <fieldset class="fieldset-auto-width">
+        <legend>Вход в систему</legend>
+        <label for="login">Имя пользователя</label>
+        <input type="text" name="login">
+        <label for="password">Пароль</label>
+        <input type="text" name="password">
+        <input type="submit">
+    </fieldset>
+</form>
+
+</body>
+</html>
