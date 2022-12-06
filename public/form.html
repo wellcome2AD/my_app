@@ -3,30 +3,35 @@
 <head>
   <meta charset="utf-8" />
   <title>Форма</title>
-  <script>
-   
-  </script>
+  <style type="text/css">
+	.fieldset-auto-width {
+		display: inline-block;
+	}
+  </style>
 </head>
 <body>
  <form id="new_problem_form" method="post"> 
-  <p>
-    <label for="fio">ФИО: </label>
-    <input type="text" id="fio" name="fio">
-  </p>
-  <p>
-    <label for="phone">Телефон: </label>
-    <input type="tel" placeholder="+X(XXX)XXX-XX-XX" id="phone" name="phone"/>
-  </p>
-  <p>
-    <label for="problem_desc">Описание проблемы:</label>
-    <textarea id="problem_desc" name="problem_desc"></textarea>
-  </p>
-  <p>
-   <input type="submit" value="Отправить" />
-  </p>
+  <fieldset class="fieldset-auto-width">
+    <legend>Форма обращения</legend>
+	<p>
+	 <label for="fio">ФИО: </label>
+	 <input type="text" id="fio" name="fio">
+	</p>
+	<p>
+	 <label for="phone">Телефон: </label>
+	 <input type="tel" placeholder="+X(XXX)XXX-XX-XX" id="phone" name="phone"/>
+	</p>
+	<p>
+	 <label for="problem_desc">Описание проблемы:</label>
+	 <textarea id="problem_desc" name="problem_desc"></textarea>
+	</p>
+	<p>
+	 <input type="submit" value="Отправить" />
+	</p>
+  </fieldset>
  </form>
  <script>
-	var socket = new WebSocket("ws://localhost:8181/ws");
+	var socket = new WebSocket("ws://localhost:8181/form.html");
 	socket.onopen = function() {
 		console.log("Соединение установлено.");
 	};
@@ -43,6 +48,7 @@
 	new_problem_form.onsubmit = function(){	    
 		socket.send(JSON.stringify({
 			page_name: window.location.pathname.split("/").pop(),
+			status: 'new_problem',
 			fio: this.elements.fio.value, 
 			phone: this.elements.phone.value,
 			problem_desc: this.elements.problem_desc.value

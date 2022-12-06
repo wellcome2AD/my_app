@@ -41,7 +41,14 @@
 
 	socket.onmessage = function(event) {
 	    data = JSON.parse(event.data);
-        document.cookie = data.cookie;
+		var temp = data.cookie.split(';');
+		for(var pair in temp)
+		{
+			document.cookie = temp[pair];
+		}
+		console.log(document.cookie);
+		if(data.redirect == window.location.pathname.split("/").pop())
+		{ alert("Введён неправильный логин или пароль"); }
 		window.location.replace(data.redirect);
     };
 	
