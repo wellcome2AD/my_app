@@ -42,12 +42,7 @@ wss.on('connection', function connection(ws, req) {
     else {
         webSockets[pageName] = [ws]
     }
-    console.log('connected: ' + pageName + ' in ' + Object.getOwnPropertyNames(webSockets))
-
-    const callback = (message) => {
-        console.log("in callback: message = " + message.data);
-        //ws.send(message.data);
-    }
+    console.log('connected: ' + pageName + ' in ' + Object.getOwnPropertyNames(webSockets));
 
     const on_authorization = (message) => {
         client.query("SELECT * FROM public.user WHERE login LIKE $1 AND password LIKE $2;", [message.data.login, message.data.password],
@@ -56,7 +51,6 @@ wss.on('connection', function connection(ws, req) {
                     console.log(err);
                     return;
                 }
-                console.log(rows);
                 if (rows.rowCount == 1) {
                     ws.send(JSON.stringify({"cookie": "login="+message.data.login+";password="+message.data.password, "redirect":"list_of_problems.html"}));
                 }
@@ -75,7 +69,6 @@ wss.on('connection', function connection(ws, req) {
                     console.log(err);
                     return;
                 }
-                console.log(rows);
                 if (rows.rowCount == 1) {
                     console.log("such user already exists: "+message.data.login+"\n");
                     ws.send(JSON.stringify({"cookie": "", "redirect":"sign_in.html"}));
@@ -102,7 +95,6 @@ wss.on('connection', function connection(ws, req) {
                     console.log(err);
                     return;
                 }
-                console.log(rows);
             });
         
         const key_to_send = "/list_of_problems.html";
@@ -113,7 +105,6 @@ wss.on('connection', function connection(ws, req) {
                     console.log(err); 
                     return;
                 }
-                console.log(rows);
                 for(var ws_to_send in webSockets[key_to_send]) {
                     webSockets[key_to_send][ws_to_send].send(JSON.stringify(rows));
                 }
@@ -121,9 +112,39 @@ wss.on('connection', function connection(ws, req) {
         }
     }
 
+    const task_distrib_update = (message) => {
+        var message_data = JSON.parse(message.data.data);
+        //console.log(message_data);
+        for(var i = 0; i < message_data.employee_id.length; ++i)
+        {
+            if(message_data.employee_id[i] != -1)
+            {
+                client.query("INSERT INTO task_distrib(employee_id, problem_id) VALUES($1, $2) " +
+                         "ON CONFLICT (problem_id) DO UPDATE SET employee_id=$1;", [message_data.employee_id[i], message_data.problem_id[i]],
+                         function(err, rows){
+                            if (err){
+                                console.log(err); 
+                                return;
+                            }
+                         });
+            }
+            else
+            {
+                client.query("DELETE FROM task_distrib WHERE problem_id=$1", [message_data.problem_id[i]],
+                    function(err, rows){
+                    if (err){
+                        console.log(err); 
+                        return;
+                    }
+                    });
+            }
+        }        
+    }
+
     messageEmitter.on('authorization', on_authorization);
     messageEmitter.on('registration', on_registration);
     messageEmitter.on('new_problem', on_new_problem);
+    messageEmitter.on('task_distrib_update', task_distrib_update);
 
     ws.on('message', function incoming(message) {
         console.log('received: %s', message);
@@ -169,9 +190,8 @@ wss.on('connection', function connection(ws, req) {
             response.end();
         }
     );
-});*/
-
-/*app.post("/sign_up.html", urlencodedParser, function (request, response) {
+});
+app.post("/sign_up.html", urlencodedParser, function (request, response) {
     client.query("select * from user where login = $1, password = $2;", [request.body.login, request.body.password],
         function(err, rows){ 
             if (err){ 
@@ -225,10 +245,9 @@ app.get("/list_of_problems.html", function(req,res){
                 console.log(err); 
                 return;
             }
-            console.log(rows);
             if(rows.rowCount != 0) {
                 var role = rows.rows[0].role;
-            var id = rows.rows[0].id;
+                var id = rows.rows[0].id;
             if(role == "admin")
             {
                 client.query("SELECT * FROM list_of_problems WHERE is_done = false;", function(err, rows){ 
@@ -236,7 +255,6 @@ app.get("/list_of_problems.html", function(req,res){
                         console.log(err); 
                         return;
                     }
-                    console.log(rows);
                     res.end(JSON.stringify(rows));
                 });
             }
@@ -251,7 +269,6 @@ app.get("/list_of_problems.html", function(req,res){
                             console.log(err); 
                             return;
                         }
-                        console.log(rows);
                         res.end(JSON.stringify(rows));
                     });
             }
@@ -262,7 +279,6 @@ app.get("/list_of_problems.html", function(req,res){
                         console.log(err); 
                         return;
                     }
-                    console.log(rows);
                     res.end(JSON.stringify(rows));
                 });
             }
@@ -273,7 +289,6 @@ app.get("/list_of_problems.html", function(req,res){
                         console.log(err); 
                         return;
                     }
-                    console.log(rows);
                     res.end(JSON.stringify(rows));
                 });
             }
@@ -284,7 +299,6 @@ app.get("/list_of_problems.html", function(req,res){
                         console.log(err); 
                         return;
                     }
-                    console.log(rows);
                     res.end(JSON.stringify(rows));
                 });
             }
@@ -296,9 +310,57 @@ app.get("/list_of_problems.html", function(req,res){
                 console.log(err); 
                 return;
             }
-            console.log(rows);
             res.end(JSON.stringify(rows));
         });
+    }
+});
+
+app.get("/task_distribution.html", function(req,res){
+    var cookie = req.cookies;
+    if(cookie.login != undefined && cookie.password != undefined) 
+    {
+        client.query("SELECT role FROM public.user WHERE login LIKE $1 AND password LIKE $2;", [cookie.login, cookie.password], function(err, rows){ 
+            if (err){
+                console.log(err); 
+                return;
+            }
+            if(rows.rowCount != 0) {
+                var role = rows.rows[0].role;
+                
+                if(role == "admin")
+                {
+                    var data = {};
+                    client.query("SELECT id, login FROM public.user WHERE role='employee';", function(err, rows){ 
+                        if (err){
+                            console.log(err); 
+                            return;
+                        }
+                        data.options_for_select = JSON.stringify(rows);
+
+                        client.query("SELECT list_of_problems.id, problem_desc, employee_id " +
+                                     "FROM list_of_problems LEFT JOIN task_distrib ON (problem_id = list_of_problems.id) " +
+                                     "WHERE is_done = false;", 
+                            function(err, rows){ 
+                                if (err){
+                                    console.log(err); 
+                                    return;
+                                }
+                                data.table_data = JSON.stringify(rows);
+
+                                console.log(JSON.stringify(data));
+                                res.end(JSON.stringify(data));
+                            });
+                    });                    
+                }
+                else
+                {
+                    res.end("Нет доступа!");
+                }
+            }
+        });
+    }
+    else {
+        res.end("Нет доступа!");
     }
 });
 

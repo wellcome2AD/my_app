@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <title>Распределение заданий для сотрудников</title>
+  <script>
+	var url = 'http://localhost:3000/task_distribution.html/';
+	var selectList = document.createElement("select");	
+	
+	function createSelect(request) {
+		function reqListener(event) {
+			var all_data = JSON.parse(this.responseText);
+			var data = JSON.parse(all_data.options_for_select);
+			selectList.innerHTML='';
+			
+			var option = document.createElement("option");
+			option.value = -1;
+			option.text = 'Выберите сотрудника';
+			selectList.appendChild(option);
+			
+			if (data.rowCount > 0) {				
+				for(var i = 0; i < data.rowCount; ++i)
+				{
+					option = document.createElement("option");
+					option.value = data.rows[i].id;
+					option.text = data.rows[i].login;
+					selectList.appendChild(option);
+				}
+			}			
+		}
+		var oReq = new XMLHttpRequest();
+		oReq.addEventListener("load", reqListener);
+		oReq.open("GET", request);
+		oReq.send();
+	}
+	function queryHandbook(request) {
+		function reqListener(event) {
+			var all_data = JSON.parse(this.responseText);
+			var data = JSON.parse(all_data.table_data);
+			var table = document.getElementById("table_data");
+			table.innerHTML='';
+
+			if (data.rowCount > 0) {
+				var header = table.createTHead();
+				var hrow = header.insertRow();
+				for (var i = 0; i < data.fields.length; ++i) {
+					var cell = hrow.insertCell();
+					cell.innerHTML = data.fields[i].name;
+				}
+				
+				var body = table.createTBody();
+				body.id = 'table_body';
+				for (var i = 0; i < data.rowCount; ++i){
+					var newRow = body.insertRow();
+					for (var j in data.rows[i]){						
+						var cell = newRow.insertCell();
+						if(j == 'employee_id') {
+							var found_child = -1;
+							for(var k = 0; k < selectList.children.length; ++k) {
+								if(data.rows[i][j] != null && selectList.children[k].value == data.rows[i][j])
+								{
+									found_child = k;
+									break;
+								}
+							}
+							
+							if (found_child != -1)
+							{
+								selectList.children[k].setAttribute("name", "select_me");
+							}
+							
+							selectList.setAttribute("name", "employee_select");
+							cell.innerHTML = selectList.outerHTML;
+							var elementsWithNameSelectMe = document.getElementsByName("select_me");
+							for(var element_index = 0; element_index < elementsWithNameSelectMe.length; ++element_index) {
+								elementsWithNameSelectMe[element_index].selected=true;
+							}
+							
+							if (found_child != -1)
+							{
+								selectList.children[k].removeAttribute("name");
+							}						
+						}
+						else {
+							cell.innerHTML = data.rows[i][j];
+						}						
+					}					
+				}
+			}			
+		}
+		var oReq = new XMLHttpRequest();
+		oReq.addEventListener("load", reqListener);
+		oReq.open("GET", request);
+		oReq.send();
+	}
+  </script>
+  <style>
+	table {
+		border: 1px solid grey;
+		width: 100%;
+		border-collapse: collapse;
+		table-layout: fixed;
+	}
+	th {
+		border: 1px solid grey;
+		font-weight: normal;
+		color: black;
+		padding: 10px 15px;
+	}
+	td {
+		border: 1px solid grey;
+		color: black;
+		border-top: 1px solid grey;
+		padding: 10px 15px;		
+		word-wrap: break-word;
+	}
+	tr:nth-child(2n) {background: #DCDCDC;} 
+	tr:hover { background-color: #A9A9A9; }
+  </style>
+</head>
+<body onload="createSelect(url); queryHandbook(url);">
+	<div id="table_div">
+		<table id="table_data">
+		</table>
+	</div>
+	<form id="confirm_form">
+	<p>
+	 <input id="confirm_button" type="submit" value="Подтвердить изменения" />
+	</p>
+	</form>
+	<script>
+	var socket = new WebSocket("ws://localhost:8181/task_distribution.html");
+	socket.onopen = function() {
+		console.log("Соединение установлено.");
+	};
+
+	socket.onclose = function(event) {
+		if (event.wasClean) {
+			console.log('Соединение закрыто чисто');
+		} else {
+			console.log('Обрыв соединения'); // например, "убит" процесс сервера
+		}
+		console.log('Код: ' + event.code + ' причина: ' + event.reason);
+	};
+
+	socket.onmessage = function(event) {
+        console.log("Получены данные " + event.data);
+        createSelect(url);
+		queryHandbook(url);
+    };
+	
+	confirm_form.onsubmit = function(){
+		console.log('confirm_form event');
+		var message = {};
+		message.employee_id = [];
+		message.problem_id = [];
+		var selectsList = document.getElementsByName('employee_select');
+		for(var i = 0; i < selectsList.length; ++i) {
+			var select = selectsList[i];
+			//console.log(select.options[select.selectedIndex].value);
+			message.employee_id.push(select.options[select.selectedIndex].value);
+		}
+		
+		var table_body = document.getElementById('table_body')
+		var trows = table_body.getElementsByTagName('tr');
+		for(var i = 0; i < trows.length; ++i)
+		{
+			//console.log(trows[i].cells[0].innerHTML);
+			message.problem_id.push(trows[i].cells[0].innerHTML);
+		}
+		
+		socket.send(JSON.stringify({
+			page_name: window.location.pathname.split("/").pop(),
+			status: 'task_distrib_update',
+			data: JSON.stringify(message)
+		}));
+		return false;
+	}
+  </script>
+</body>
+</html>
