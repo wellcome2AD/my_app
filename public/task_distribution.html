@@ -6,7 +6,11 @@
   <script>
 	var url = 'http://localhost:3000/task_distribution.html/';
 	var selectList = document.createElement("select");	
-	
+	function onPageLoad(request)
+	{
+		createSelect(url); 
+		queryHandbook(url);
+	}
 	function createSelect(request) {
 		function reqListener(event) {
 			var all_data = JSON.parse(this.responseText);
@@ -118,7 +122,7 @@
 	tr:hover { background-color: #A9A9A9; }
   </style>
 </head>
-<body onload="createSelect(url); queryHandbook(url);">
+<body onload="onPageLoad(url);">
 	<div id="table_div">
 		<table id="table_data">
 		</table>
@@ -154,18 +158,13 @@
 		var message = {};
 		message.employee_id = [];
 		message.problem_id = [];
-		var selectsList = document.getElementsByName('employee_select');
-		for(var i = 0; i < selectsList.length; ++i) {
-			var select = selectsList[i];
-			//console.log(select.options[select.selectedIndex].value);
-			message.employee_id.push(select.options[select.selectedIndex].value);
-		}
 		
+		var selectsList = document.getElementsByName('employee_select');
 		var table_body = document.getElementById('table_body')
 		var trows = table_body.getElementsByTagName('tr');
-		for(var i = 0; i < trows.length; ++i)
-		{
-			//console.log(trows[i].cells[0].innerHTML);
+		for(var i = 0; i < selectsList.length; ++i) {
+			var select = selectsList[i];
+			message.employee_id.push(select.options[select.selectedIndex].value);
 			message.problem_id.push(trows[i].cells[0].innerHTML);
 		}
 		

@@ -5,15 +5,15 @@
   <title>Список всех проблем</title>
   <script>
 	var url = 'http://localhost:3000/list_of_problems.html/';
-	
 	function queryHandbook(request) {
 		function reqListener(event) {
-			var data = JSON.parse(this.responseText);			
+			var message = JSON.parse(this.responseText);
+			var data = message.rows;
+			var role = message.role;
+			console.log(role);
 			console.log(data);
 			var table = document.getElementById("table_data");
-			console.log(table);
 			table.innerHTML='';
-			console.log(table);
 
 			if (data.rowCount > 0) {
 				var header = table.createTHead();
@@ -22,21 +22,38 @@
 					var cell = hrow.insertCell();
 					cell.innerHTML = data.fields[i].name;
 				}
+				
+				var body = table.createTBody();
+				body.id = 'table_body';
 				for (var i = 0; i < data.rowCount; ++i){
-					var newRow = table.insertRow();
+					var newRow = body.insertRow();
 					for (j in data.rows[i]){
-						var cell = newRow.insertCell();
-						cell.innerHTML = data.rows[i][j];
+						var cell = newRow.insertCell();						
+						cell.innerHTML = data.rows[i][j];						
 					}
 				}
 			}
-
-			
+			if(role == 'employee')
+			{
+				updatePageForEmployee();
+			}
 		}
 		var oReq = new XMLHttpRequest();
 		oReq.addEventListener("load", reqListener);
 		oReq.open("GET", request);
 		oReq.send();
+	}
+	function updatePageForEmployee()
+	{
+		var table_body = document.getElementById('table_body');
+		var trows = table_body.getElementsByTagName('tr');
+		for(var i = 0; i < trows.length; ++i)
+		{
+			trows[i].cells[2].innerHTML = '<input type="checkbox" name="checkbox">';
+			trows[i].cells[3].innerHTML = '<textarea name="textarea"></textarea>'
+		}
+		var form = document.getElementById('load_changes_form');
+		form.innerHTML = '<input type="submit" value="Сохранить изменения">';
 	}
   </script>
   <style>
@@ -63,11 +80,15 @@
 	tr:hover { background-color: #A9A9A9; }
   </style>
 </head>
-<body onload = "queryHandbook(url)">
+<body onload = "queryHandbook(url);">
 	<div id="table_div">
 		<table id="table_data">
 		</table>
 	</div>
+	<p>
+		<form id="load_changes_form">
+		</form>
+	</p>
 	<script>
 	var socket = new WebSocket("ws://localhost:8181/list_of_problems.html");
 	socket.onopen = function() {
@@ -85,8 +106,42 @@
 
 	socket.onmessage = function(event) {
         console.log("Получены данные " + event.data);
-        queryHandbook(url);
+		queryHandbook(url);
     };
+	
+	load_changes_form.onsubmit = function(){	    
+		console.log('load_changes_form event');
+		var message = {};
+		message.problem_id = [];
+		message.is_done = [];
+		message.comment = [];
+		var table_body = document.getElementById('table_body')
+		var trows = table_body.getElementsByTagName('tr');
+		for(var i = 0; i < trows.length; ++i)
+		{
+			console.log(trows[i].cells[0].innerHTML);
+			//message.problem_id.push(trows[i].cells[0].innerHTML);
+		}
+		
+		var chechboxesList = document.getElementsByName('checkbox');
+		var commentsList = document.getElementsByName('textarea');
+		var table_body = document.getElementById('table_body')
+		var trows = table_body.getElementsByTagName('tr');
+		for(var i = 0; i < chechboxesList.length; ++i) {
+			var checkbox = chechboxesList[i];
+			var comment = commentsList[i];
+			message.is_done.push(checkbox.checked);
+			message.comment.push(comment.value);
+			message.problem_id.push(trows[i].cells[0].innerHTML);			
+		}
+		console.log(message);		
+		socket.send(JSON.stringify({
+			page_name: window.location.pathname.split("/").pop(),
+			status: 'list_of_problems_update',
+			data: JSON.stringify(message)
+		}));
+		return false;
+	}
   </script>
 </body>
 </html>
