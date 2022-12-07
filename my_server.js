@@ -176,7 +176,7 @@ wss.on('connection', function connection(ws, req) {
                 var role = 'other';
                 if(login != undefined && password != undefined) 
                 {
-                    client.query("SELECT id, role FROM public.user WHERE login LIKE $1 AND password LIKE $2;", [cookie.login, cookie.password], function(err, rows){ 
+                    client.query("SELECT id, role FROM public.user WHERE login LIKE $1 AND password LIKE $2;", [login, password], function(err, rows){ 
                         if (err){
                             console.log(err); 
                             return;
