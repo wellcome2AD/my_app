@@ -10,7 +10,7 @@
   </style>
 </head>
 <body>
-<form id="enter_system_form" method="POST">
+<form id="enter_system_form">
   <fieldset class="fieldset-auto-width">
 	<legend>Вход в систему</legend>
 	<p>
@@ -21,9 +21,10 @@
 	  <label for="password">Пароль</label>
 	  <input type="password" name="password" value="">
 	</p>
-	<p>Ещё не зарегистрирован? <a href="/sign_up.html">Зарегистрироваться</a><p>
+	<p>Ещё не зарегистрирован? <a href="/sign_up.html">Зарегистрироваться</a></p>
 	<input type="submit">
   </fieldset>
+</form>
   <script>
 	var socket = new WebSocket("ws://localhost:8181/ws");
 	socket.onopen = function() {
@@ -48,7 +49,9 @@
 		}
 		console.log(document.cookie);
 		if(data.redirect == window.location.pathname.split("/").pop())
-		{ alert("Введён неправильный логин или пароль"); }
+		{ 
+			alert("Введён неправильный логин или пароль"); 
+		}
 		window.location.replace(data.redirect);
     };
 	
@@ -57,8 +60,7 @@
 			page_name: window.location.pathname.split("/").pop(),
 			status: 'authorization',
 			login: this.elements.login.value, 
-			password: this.elements.password.value,
-			role: 
+			password: this.elements.password.value
 		}));
 		return false;
 	}

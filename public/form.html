@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
-  <title>Форма</title>
+  <title>Форма обращения</title>
   <style type="text/css">
 	.fieldset-auto-width {
 		display: inline-block;
@@ -10,7 +10,10 @@
   </style>
 </head>
 <body>
- <form id="new_problem_form"> 
+<form id="new_problem_form"> 
+  <span style="float:right">
+	<a href="/sign_in.html">Сменить пользователя</a>
+  </span>
   <fieldset class="fieldset-auto-width">
     <legend>Форма обращения</legend>
 	<p>
@@ -24,12 +27,15 @@
 	<p>
 	 <label for="problem_desc">Описание проблемы:</label>
 	 <textarea id="problem_desc" name="problem_desc"></textarea>
+	</p>	
+	 <input type="submit" value="Отправить" />	 
 	</p>
-	<p>
-	 <input type="submit" value="Отправить" />
-	</p>
+ 
   </fieldset>
- </form>
+</form>
+<p>
+  <button type="button" onclick="goToListOfProblems()">Перейти к таблице проблем</button>
+</p> 
  <script>
 	var socket = new WebSocket("ws://localhost:8181/form.html");
 	socket.onopen = function() {
@@ -48,12 +54,19 @@
 	new_problem_form.onsubmit = function(){	    
 		socket.send(JSON.stringify({
 			page_name: window.location.pathname.split("/").pop(),
+			cookie: document.cookie,
 			status: 'new_problem',
 			fio: this.elements.fio.value, 
 			phone: this.elements.phone.value,
 			problem_desc: this.elements.problem_desc.value
 		}));
+		alert("Ваша проблема была добавлена в таблицу всех проблем");
+		window.location.replace(window.location.pathname.split("/").pop());
 		return false;
+	}
+	
+	function goToListOfProblems() {
+		window.location.replace("list_of_problems.html");
 	}
   </script>
 </body>

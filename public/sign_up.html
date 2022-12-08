@@ -22,8 +22,9 @@
 	  <input type="password" name="password">
 	</p>
 	<input type="submit">
-	<p>Уже зарегистрирован? <a href="/sign_in.html">Войти</a><p>
+	<p>Уже зарегистрирован?<a href="/sign_in.html">Войти</a></p>
   </fieldset>
+</form>
   <script>
 	var socket = new WebSocket("ws://localhost:8181/ws");
 	socket.onopen = function() {
@@ -41,10 +42,7 @@
 
 	socket.onmessage = function(event) {
         data = JSON.parse(event.data);
-		if(data.info == undefined){
-			
-		}
-        document.cookie = data.cookie;
+		alert(data.info);
 		window.location.replace(data.redirect);
     };
 	

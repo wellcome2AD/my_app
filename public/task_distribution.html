@@ -91,11 +91,19 @@
 					}					
 				}
 			}			
+			createButtonToReplace("Перейти к списку проблем", "window.location.replace('list_of_problems.html');")
 		}
 		var oReq = new XMLHttpRequest();
 		oReq.addEventListener("load", reqListener);
 		oReq.open("GET", request);
 		oReq.send();
+	}
+	function createButtonToReplace(text, onclick_action) {
+		var div = document.getElementById('div_for_button');
+		var button = document.createElement("button");
+		button.appendChild(document.createTextNode(text));
+		button.setAttribute("onclick", onclick_action);
+		div.appendChild(button);
 	}
   </script>
   <style>
@@ -123,6 +131,10 @@
   </style>
 </head>
 <body onload="onPageLoad(url);">
+	<span style="float:right">
+		<a href="/sign_in.html">Сменить пользователя</a>
+	</span>
+	<div id="div_for_button"></div>
 	<div id="table_div">
 		<table id="table_data">
 		</table>

@@ -1,22 +1,7 @@
-const db = require("mysql");
-const connection = db.createConnection({
-    host: "localhost",
-    user: "alex",
-    password: "Qwerty123",
-    database: "world"
-});
+var pg = require('pg');
+var conString = "postgres://postgres:1234@localhost:5432/my_app";
 
-connection.connect(function(err){
-    if (err) {
-        console.log(err);
-        return;
-    }
-    console.log("connection established");
-})
+var client = new pg.Client(conString);
+client.connect();
 
-
-
-
-
-
-module.exports = connection;
+module.exports = client;
