@@ -355,43 +355,43 @@ app.get("/list_of_problems.html", function(req,res){
                 }
                 else
                 {                    
-                    client.query("SELECT * FROM list_of_problems ORDER BY id;", function(err, rows){ // to do: login indtead of user_id
-                        if (err){
-                            console.log(err); 
-                            return;
-                        }
-                        data.role = role;
-                        data.rows = rows;
-                        res.end(JSON.stringify(data));
+                    client.query("SELECT list_of_problems.id, fio, login, phone, problem_desc, is_done, comment " + 
+                             "FROM list_of_problems " +
+                             "LEFT JOIN public.user ON (user_id = public.user.id) " +
+                             "ORDER BY list_of_problems.id;", 
+                        function(err, rows){
+                            if (err){
+                                console.log(err); 
+                                return;
+                            }
+                            data.rows = rows;
+                            res.end(JSON.stringify(data));
                     });
                 }
             }
-            else {
-                client.query("SELECT * FROM list_of_problems ORDER BY id;", function(err, rows){ // to do: login indtead of user_id
-                    if (err){
-                        console.log(err); 
-                        return;
-                    }
-                    data.rows = rows;
-                    res.end(JSON.stringify(data));
-                });
-            }
         });
-    }
-    else {
-        client.query("SELECT * FROM list_of_problems ORDER BY id;", function(err, rows){ // to do: login indtead of user_id
+    }    
+    client.query("SELECT list_of_problems.id, fio, login, phone, problem_desc, is_done, comment " + 
+                            "FROM list_of_problems " +
+                            "LEFT JOIN public.user ON (user_id = public.user.id) " +
+                            "ORDER BY list_of_problems.id;", 
+        function(err, rows){
             if (err){
                 console.log(err); 
                 return;
             }
             data.rows = rows;
             res.end(JSON.stringify(data));
-        });
-    }
+    });
 });
 
 app.get("/task_distribution.html", function(req,res){
     var cookie = req.cookies;
+    var data = {};
+    data.haveAccess = false;
+    data.info = [];
+    data.options_for_select = [];
+    data.table_data = [];
     if(cookie.login != undefined && cookie.password != undefined) 
     {
         client.query("SELECT role FROM public.user WHERE login LIKE $1 AND password LIKE $2;", [cookie.login, cookie.password], function(err, rows){ 
@@ -400,14 +400,18 @@ app.get("/task_distribution.html", function(req,res){
                 return;
             }
             if(rows.rowCount == 0) {
-                res.end();
+                data.haveAccess = true;
+                data.info = "Список проблем пуст. Можно отдохнуть"
+                res.end(JSON.stringify(data));
             }
             var role = rows.rows[0].role;            
             if(role == "!admin")
             {
-                res.end("Нет доступа!");                   
+                data.haveAccess = true;                
+                data.info = 'Нет доступа к странице';
+                res.end(JSON.stringify(data));                  
             }
-            var data = {};
+            data.haveAccess = 1;
             client.query("SELECT id, login FROM public.user WHERE role='employee';", function(err, rows){ 
                 if (err){
                     console.log(err); 
@@ -424,15 +428,15 @@ app.get("/task_distribution.html", function(req,res){
                             return;
                         }
                         data.table_data = JSON.stringify(rows);
-
-                        console.log(JSON.stringify(data));
                         res.end(JSON.stringify(data));
                 });
             });
         });
     }
     else {
-        res.end("Нет доступа!");
+        data.haveAccess = false;
+        data.info = 'Нет доступа к странице';
+        res.end(JSON.stringify(data));
     }
 });
 

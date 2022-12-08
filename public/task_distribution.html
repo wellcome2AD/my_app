@@ -7,16 +7,24 @@
 	var url = 'http://localhost:3000/task_distribution.html/';
 	var selectList = document.createElement("select");	
 	function onPageLoad(request)
-	{
-		createSelect(url); 
+	{		
+		createSelect(url);
 		queryHandbook(url);
 	}
 	function createSelect(request) {
 		function reqListener(event) {
 			var all_data = JSON.parse(this.responseText);
+			
+			var haveAccess = all_data.haveAccess;
+			var info = all_data.info;
+			if(haveAccess != true || info.length != 0)
+			{
+				alert(info);
+				window.location.replace('sign_in.html');
+			}
+			
 			var data = JSON.parse(all_data.options_for_select);
 			selectList.innerHTML='';
-			
 			var option = document.createElement("option");
 			option.value = -1;
 			option.text = 'Выберите сотрудника';
@@ -25,8 +33,10 @@
 			if (data.rowCount > 0) {				
 				for(var i = 0; i < data.rowCount; ++i)
 				{
-					option = document.createElement("option");
+					option = document.createElement("option");					
+					console.log(data.rows[i].id);
 					option.value = data.rows[i].id;
+					console.log(data.rows[i].login);
 					option.text = data.rows[i].login;
 					selectList.appendChild(option);
 				}
@@ -39,11 +49,10 @@
 	}
 	function queryHandbook(request) {
 		function reqListener(event) {
-			var all_data = JSON.parse(this.responseText);
+			var all_data = JSON.parse(this.responseText);			
 			var data = JSON.parse(all_data.table_data);
 			var table = document.getElementById("table_data");
-			table.innerHTML='';
-
+			table.innerHTML='';			
 			if (data.rowCount > 0) {
 				var header = table.createTHead();
 				var hrow = header.insertRow();
@@ -160,7 +169,6 @@
 	};
 
 	socket.onmessage = function(event) {
-        console.log("Получены данные " + event.data);
         createSelect(url);
 		queryHandbook(url);
     };
