@@ -14,7 +14,7 @@ const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-app.use(express.static('public', {extensions:['html']})); // статическое содержимое - в public, которая находится в корне проекта
+app.use(express.static('public')); // статическое содержимое - в public, которая находится в корне проекта
 app.use(cookieParser());
 
 app.use('/', router);
@@ -118,119 +118,100 @@ wss.on('connection', function connection(ws, req) {
         }
     }
 
-    const task_distrib_update = (message) => {
+    const on_task_distrib_update = (message) => {
         var message_data = JSON.parse(message.data.data);
         for(var i = 0; i < message_data.employee_id.length; ++i)
         {
-            if(message_data.employee_id[i] != -1) // to do: перенести в db.js
+            if(message_data.employee_id[i] != -1)
             {
-                client.query("INSERT INTO task_distrib(employee_id, problem_id) VALUES($1, $2) " +
-                             "ON CONFLICT (problem_id) DO UPDATE SET employee_id=$1;", [message_data.employee_id[i], message_data.problem_id[i]],
-                    function(err, rows){
-                    if (err){
-                        console.log(err); 
-                        return;
-                    }
-                });
+                client.insertIntoTaskDistrib(message_data.employee_id[i], message_data.problem_id[i]);
             }
-            else // to do: перенести в db.js
+            else
             {
-                client.query("DELETE FROM task_distrib WHERE problem_id=$1", [message_data.problem_id[i]],
-                    function(err, rows){
-                    if (err){
-                        console.log(err); 
-                        return;
-                    }
-                });
+                client.deleteFromTaskDistrib(message_data.problem_id[i]);
             }
-        }
 
-        const key_to_send = "/list_of_problems.html";
-        if(key_to_send in webSockets)
-        {
-            var list_of_users = webSockets[key_to_send]
-            for(var i = 0; i < list_of_users.length; ++i)
+            const key_to_send = "/list_of_problems.html";
+            if(key_to_send in webSockets)
             {
-                var optionList = list_of_users[0].cookie.split(';'); // ["login=admin", "password=qwertyu"]
-                var loginOption = optionList[0].split('=');
-                var login = loginOption[1];
-                var passwordOption = optionList[1].split('=');
-                var password = passwordOption[1];
-                var data_to_send = {};
-                data_to_send.to_employee = [];
-                data_to_send.to_users = [];
-                data_to_send.to_admins = [];
-                data_to_send.to_others = [];
-                var role = 'other';
-                if(login != undefined && password != undefined) 
+                var list_of_users = webSockets[key_to_send]
+                for(var i = 0; i < list_of_users.length; ++i)
                 {
-                    client.query("SELECT id, role FROM public.user WHERE login LIKE $1 AND password LIKE $2;", [login, password], function(err, rows){ 
-                        if (err){
-                            console.log(err); 
-                            return;
-                        }
-                        var data = {};
-                        if(rows.rowCount != 0) {
-                            role = rows.rows[0].role;
-                            var id = rows.rows[0].id;
-                            data.role = role;
-                            if(role == "admin")
-                            {
-                                client.query("SELECT * FROM list_of_problems WHERE is_done = false;", function(err, rows){ 
-                                    if (err){
-                                        console.log(err); 
-                                        return;
-                                    }
-                                    data.rows = rows;
-                                    data_to_send.to_admins = JSON.stringify(data);
-                                });
-                                webSockets[key_to_send][i].send(JSON.stringify(data_to_send.to_admins));
+                    var optionList = list_of_users[0].cookie.split(';'); // ["login=admin", "password=qwertyu"]
+                    var loginOption = optionList[0].split('=');
+                    var login = loginOption[1];
+                    var passwordOption = optionList[1].split('=');
+                    var password = passwordOption[1];
+
+                    var data_to_send = {};
+                    data_to_send.to_employee = [];
+                    data_to_send.to_users = [];
+                    data_to_send.to_admins = [];
+                    data_to_send.to_others = [];
+                    var role = 'other';
+                    if(login != undefined && password != undefined) 
+                    {
+                        client.query("SELECT id, role FROM public.user WHERE login LIKE $1 AND password LIKE $2;", [login, password], function(err, rows){ 
+                            if (err){
+                                console.log(err); 
+                                return;
                             }
-                            else if(role == "employee")
-                            {
-                                client.query("SELECT problem_id, problem_desc, is_done, comment " +
-                                            "FROM task_distrib " +
-                                            "JOIN list_of_problems ON (problem_id = list_of_problems.id) " +
-                                            "WHERE (task_distrib.employee_id = $1);", [id],
-                                    function(err, rows){ 
+                            var data = {};
+                            if(rows.rowCount != 0) {
+                                role = rows.rows[0].role;
+                                var id = rows.rows[0].id;
+                                data.role = role;
+                                if(role == "admin")
+                                {
+                                    client.query("SELECT * FROM list_of_problems WHERE is_done = false;", function(err, rows){ 
                                         if (err){
                                             console.log(err); 
                                             return;
                                         }
                                         data.rows = rows;
-                                        data_to_send.to_employees = JSON.stringify(data);                                        
-                                    }
-                                );
-                                webSockets[key_to_send][ws_to_send].send(JSON.stringify(data_to_send.to_employees));
+                                        data_to_send.to_admins = JSON.stringify(data);
+                                    });
+                                    webSockets[key_to_send][i].send(JSON.stringify(data_to_send.to_admins));
+                                }
+                                else if(role == "employee")
+                                {
+
+                                    client.query("SELECT problem_id, problem_desc, is_done, comment " +
+                                                "FROM task_distrib " +
+                                                "JOIN list_of_problems ON (problem_id = list_of_problems.id) " +
+                                                "WHERE (task_distrib.employee_id = $1);", [id],
+                                        function(err, rows){ 
+                                            if (err){
+                                                console.log(err); 
+                                                return;
+                                            }
+                                            data.rows = rows;
+                                            data_to_send.to_employees = JSON.stringify(data);                                        
+                                        }
+                                    );
+                                    webSockets[key_to_send][ws_to_send].send(JSON.stringify(data_to_send.to_employees));
+                                }
                             }
-                        }
-                    });
-                }             
+                        });
+                    }             
+                }
             }
         }
     }
 
-    const list_of_problems_update = (message) => {
+    const on_list_of_problems_update = (message) => {
         var message_data = JSON.parse(message.data.data);
         for(var i = 0; i < message_data.problem_id.length; ++i)
         {
-            // to do: перенести в db.js
-            client.query("UPDATE list_of_problems SET is_done=$1, comment=$2 WHERE id=$3;", [message_data.is_done[i], message_data.comment[i], message_data.problem_id[i]],
-                function(err, rows){
-                if (err){
-                    console.log(err); 
-                    return;
-                }
-            });
-            if(message_data.is_done[i] == true) // to do: перенести в db.js 
+            var query_data = {};
+            query_data.is_done = message_data.is_done[i];
+            query_data.comment = message_data.comment[i];
+            query_data.problem_id = message_data.problem_id[i];
+            client.updateListOfProblems(query_data);
+
+            if(message_data.is_done[i] == true) 
             {
-                client.query("DELETE FROM task_distrib WHERE problem_id=$1;", [message_data.problem_id[i]],
-                    function(err, rows){
-                    if (err){
-                        console.log(err); 
-                        return;
-                    }
-                });                
+                client.deleteFromTaskDistrib(message_data.problem_id[i]);
             }
         }
 
@@ -248,17 +229,17 @@ wss.on('connection', function connection(ws, req) {
                 client.query("SELECT list_of_problems.id, problem_desc, employee_id " +
                             "FROM list_of_problems LEFT JOIN task_distrib ON (problem_id = list_of_problems.id) " +
                             "WHERE is_done = false;", 
-                    function(err, rows){ 
-                        if (err){
-                            console.log(err); 
-                            return;
-                        }
-                        data.table_data = JSON.stringify(rows);
+                function(err, rows){ 
+                    if (err){
+                        console.log(err); 
+                        return;
+                    }
+                    data.table_data = JSON.stringify(rows);
 
-                        console.log(JSON.stringify(data));
-                        for(var ws_to_send in webSockets[key_to_send]) {
-                            webSockets[key_to_send][ws_to_send].send(JSON.stringify(data));
-                        }
+                    console.log(JSON.stringify(data));
+                    for(var ws_to_send in webSockets[key_to_send]) {
+                        webSockets[key_to_send][ws_to_send].send(JSON.stringify(data));
+                    }
                 });
             });  
         }
@@ -267,8 +248,8 @@ wss.on('connection', function connection(ws, req) {
     messageEmitter.on('authorization', on_authorization);
     messageEmitter.on('registration', on_registration);
     messageEmitter.on('new_problem', on_new_problem);
-    messageEmitter.on('task_distrib_update', task_distrib_update);
-    messageEmitter.on('list_of_problems_update', list_of_problems_update);
+    messageEmitter.on('task_distrib_update', on_task_distrib_update);
+    messageEmitter.on('list_of_problems_update', on_list_of_problems_update);
 
     ws.on('message', function incoming(message) {
         console.log('received: %s', message);
@@ -281,8 +262,8 @@ wss.on('connection', function connection(ws, req) {
         messageEmitter.off('authorization', on_authorization);
         messageEmitter.off('registration', on_registration);
         messageEmitter.off('new_problem', on_new_problem);
-        messageEmitter.off('task_distrib_update', task_distrib_update);
-        messageEmitter.off('list_of_problems_update', list_of_problems_update);
+        messageEmitter.off('task_distrib_update', on_task_distrib_update);
+        messageEmitter.off('list_of_problems_update', on_list_of_problems_update);
         for(var key in webSockets)
         {
             const index = webSockets[key].indexOf(ws);

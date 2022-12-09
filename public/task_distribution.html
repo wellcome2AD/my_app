@@ -9,12 +9,11 @@
 	function onPageLoad(request)
 	{		
 		createSelect(url);
-		queryHandbook(url);
+		createTable(url);
 	}
 	function createSelect(request) {
 		function reqListener(event) {
-			var all_data = JSON.parse(this.responseText);
-			
+			var all_data = JSON.parse(this.responseText);			
 			var haveAccess = all_data.haveAccess;
 			var info = all_data.info;
 			if(haveAccess != true || info.length != 0)
@@ -47,7 +46,7 @@
 		oReq.open("GET", request);
 		oReq.send();
 	}
-	function queryHandbook(request) {
+	function createTable(request) {
 		function reqListener(event) {
 			var all_data = JSON.parse(this.responseText);			
 			var data = JSON.parse(all_data.table_data);
@@ -158,7 +157,6 @@
 	socket.onopen = function() {
 		console.log("Соединение установлено.");
 	};
-
 	socket.onclose = function(event) {
 		if (event.wasClean) {
 			console.log('Соединение закрыто чисто');
@@ -167,14 +165,12 @@
 		}
 		console.log('Код: ' + event.code + ' причина: ' + event.reason);
 	};
-
 	socket.onmessage = function(event) {
         createSelect(url);
-		queryHandbook(url);
-    };
-	
+		createTable(url);
+    };	
 	confirm_form.onsubmit = function(){
-		console.log('confirm_form event');
+		alert('Текущие изменения сохранены');
 		var message = {};
 		message.employee_id = [];
 		message.problem_id = [];

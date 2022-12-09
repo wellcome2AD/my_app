@@ -29,19 +29,17 @@
 	 <textarea id="problem_desc" name="problem_desc"></textarea>
 	</p>	
 	 <input type="submit" value="Отправить" />	 
-	</p>
- 
+	</p> 
   </fieldset>
 </form>
 <p>
-  <button type="button" onclick="goToListOfProblems()">Перейти к таблице проблем</button>
+  <button type="button" onclick="window.location.replace('list_of_problems.html');">Перейти к таблице проблем</button>
 </p> 
  <script>
 	var socket = new WebSocket("ws://localhost:8181/form.html");
 	socket.onopen = function() {
 		console.log("Соединение установлено.");
 	};
-
 	socket.onclose = function(event) {
 		if (event.wasClean) {
 			console.log('Соединение закрыто чисто');
@@ -50,7 +48,6 @@
 		}
 		console.log('Код: ' + event.code + ' причина: ' + event.reason);
 	};
-
 	new_problem_form.onsubmit = function(){	    
 		socket.send(JSON.stringify({
 			page_name: window.location.pathname.split("/").pop(),
@@ -63,10 +60,6 @@
 		alert("Ваша проблема была добавлена в таблицу всех проблем");
 		window.location.replace(window.location.pathname.split("/").pop());
 		return false;
-	}
-	
-	function goToListOfProblems() {
-		window.location.replace("list_of_problems.html");
 	}
   </script>
 </body>

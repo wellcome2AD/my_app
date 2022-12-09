@@ -5,7 +5,7 @@
   <title>Список всех проблем</title>
   <script>
 	var url = 'http://localhost:3000/list_of_problems.html/';
-	function queryHandbook(request) {
+	function createTable(request) {
 		function reqListener(event) {
 			var message = JSON.parse(this.responseText);
 			var data = message.rows;
@@ -114,7 +114,7 @@
 	tr:hover { background-color: #A9A9A9; }
   </style>
 </head>
-<body onload = "queryHandbook(url);">
+<body onload = "createTable(url);">
 	<span style="float:right">
 		<a href="/sign_in.html">Сменить пользователя</a>
 	</span>
@@ -141,12 +141,10 @@
 			}
 			console.log('Код: ' + event.code + ' причина: ' + event.reason);
 		};
-
 		socket.onmessage = function(event) {
 			console.log("Получены данные " + event.data);
-			queryHandbook(url);
-		};
-		
+			createTable(url);
+		};		
 		load_changes_form.onsubmit = function(){
 			var message = {};
 			message.problem_id = [];

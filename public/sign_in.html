@@ -30,7 +30,6 @@
 	socket.onopen = function() {
 		console.log("Соединение установлено.");
 	};
-
 	socket.onclose = function(event) {
 		if (event.wasClean) {
 			console.log('Соединение закрыто чисто');
@@ -39,7 +38,6 @@
 		}
 		console.log('Код: ' + event.code + ' причина: ' + event.reason);
 	};
-
 	socket.onmessage = function(event) {
 	    data = JSON.parse(event.data);
 		var temp = data.cookie.split(';');
@@ -53,8 +51,7 @@
 			alert("Введён неправильный логин или пароль"); 
 		}
 		window.location.replace(data.redirect);
-    };
-	
+    };	
 	enter_system_form.onsubmit = function(){	    
 		socket.send(JSON.stringify({
 			page_name: window.location.pathname.split("/").pop(),

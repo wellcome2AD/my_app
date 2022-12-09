@@ -41,14 +41,14 @@ client.listOfProblemsQuery = function(req, res) {
                                 "FROM task_distrib " +
                                 "RIGHT JOIN list_of_problems ON (problem_id = list_of_problems.id) " +
                                 "WHERE (task_distrib.employee_id = $1);", [id],
-                        function(err, rows){ 
-                            if (err){
-                                console.log(err); 
-                                return;
-                            }
-                            data.rows = rows;
-                            res.end(JSON.stringify(data));
-                        });
+                    function(err, rows){ 
+                        if (err){
+                            console.log(err); 
+                            return;
+                        }
+                        data.rows = rows;
+                        res.end(JSON.stringify(data));
+                    });
                 }
                 else
                 {                    
@@ -150,6 +150,34 @@ client.addNewProblem = function(data){
                 return;
             }
         });
+    });
+}
+client.insertIntoTaskDistrib = function(employee_id, problem_id){
+    client.query("INSERT INTO task_distrib(employee_id, problem_id) VALUES($1, $2) " +
+                 "ON CONFLICT (problem_id) DO UPDATE SET employee_id=$1;", [employee_id, problem_id],
+        function(err, rows){
+        if (err){
+            console.log(err); 
+            return;
+        }
+    });
+}
+client.deleteFromTaskDistrib = function(problem_id){
+    client.query("DELETE FROM task_distrib WHERE problem_id=$1", [problem_id],
+    function(err, rows){
+    if (err){
+        console.log(err); 
+        return;
+    }
+});
+}
+client.updateListOfProblems = function(message_data){
+    client.query("UPDATE list_of_problems SET is_done=$1, comment=$2 WHERE id=$3;", [message_data.is_done, message_data.comment, message_data.problem_id],
+        function(err, rows){
+        if (err){
+            console.log(err); 
+            return;
+        }
     });
 }
 
