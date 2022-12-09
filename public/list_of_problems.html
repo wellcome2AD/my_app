@@ -77,7 +77,7 @@
 		for(var i = 0; i < trows.length; ++i)
 		{
 			trows[i].cells[2].innerHTML = '<input type="checkbox" name="checkbox">';
-			trows[i].cells[3].innerHTML = '<textarea name="textarea"></textarea>'
+			trows[i].cells[3].innerHTML = '<textarea name="textarea"></textarea>';
 		}
 		var form = document.getElementById('load_changes_form');
 		form.innerHTML = '<input type="submit" value="Сохранить изменения">';
@@ -147,8 +147,7 @@
 			queryHandbook(url);
 		};
 		
-		load_changes_form.onsubmit = function(){	    
-			alert('load_changes_form event');
+		load_changes_form.onsubmit = function(){
 			var message = {};
 			message.problem_id = [];
 			message.is_done = [];
