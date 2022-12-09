@@ -30,10 +30,6 @@ server.listen(8181, function listening() {
 
 wss.on('connection', function connection(ws, req) {
     const messageEmitter = new EE();
-
-    var location = url.parse(req.url, true);
-    // You might use location.query.access_token to authenticate or share sessions
-    // or req.headers.cookie (see http://stackoverflow.com/a/16395220/151312)
     console.log("new client connected");
     var pageName = req.url;
     ws.cookie = req.headers.cookie;
@@ -98,21 +94,12 @@ wss.on('connection', function connection(ws, req) {
             var passwordOption = optionList[1].split('=');
             var password = passwordOption[1];
             if(login != undefined && password != undefined) 
-            {            
-                client.query("SELECT id, role FROM public.user WHERE login LIKE $1 AND password LIKE $2;", [login, password], function(err, rows){ 
-                    if (err){
-                        console.log(err); 
-                        return;
-                    }
-                    user_id = rows.rows[0].id;
-                    client.query("INSERT INTO list_of_problems VALUES(default, $1, $2, $3, $4, default);", [message.data.fio, user_id, message.data.phone, message.data.problem_desc],
-                        function(err, rows){ 
-                            if (err){ 
-                                console.log(err);
-                                return;
-                            }
-                    });
-                });
+            {
+                var data = {};
+                data.login = login;
+                data.password = password;
+                data.message = message;
+                client.addNewProblem(data);
             }
         }        
         
@@ -135,7 +122,7 @@ wss.on('connection', function connection(ws, req) {
         var message_data = JSON.parse(message.data.data);
         for(var i = 0; i < message_data.employee_id.length; ++i)
         {
-            if(message_data.employee_id[i] != -1)
+            if(message_data.employee_id[i] != -1) // to do: перенести в db.js
             {
                 client.query("INSERT INTO task_distrib(employee_id, problem_id) VALUES($1, $2) " +
                              "ON CONFLICT (problem_id) DO UPDATE SET employee_id=$1;", [message_data.employee_id[i], message_data.problem_id[i]],
@@ -146,7 +133,7 @@ wss.on('connection', function connection(ws, req) {
                     }
                 });
             }
-            else
+            else // to do: перенести в db.js
             {
                 client.query("DELETE FROM task_distrib WHERE problem_id=$1", [message_data.problem_id[i]],
                     function(err, rows){
@@ -227,6 +214,7 @@ wss.on('connection', function connection(ws, req) {
         var message_data = JSON.parse(message.data.data);
         for(var i = 0; i < message_data.problem_id.length; ++i)
         {
+            // to do: перенести в db.js
             client.query("UPDATE list_of_problems SET is_done=$1, comment=$2 WHERE id=$3;", [message_data.is_done[i], message_data.comment[i], message_data.problem_id[i]],
                 function(err, rows){
                 if (err){
@@ -234,7 +222,7 @@ wss.on('connection', function connection(ws, req) {
                     return;
                 }
             });
-            if(message_data.is_done[i] == true)            
+            if(message_data.is_done[i] == true) // to do: перенести в db.js 
             {
                 client.query("DELETE FROM task_distrib WHERE problem_id=$1;", [message_data.problem_id[i]],
                     function(err, rows){

@@ -84,5 +84,73 @@ client.listOfProblemsQuery = function(req, res) {
         });
     }
 }
+client.taskDistributionQuery = function(req, res){
+    var cookie = req.cookies;
+    var data = {};
+    data.haveAccess = false;
+    data.info = [];
+    if(cookie.login != undefined && cookie.password != undefined) 
+    {
+        client.query("SELECT role FROM public.user WHERE login LIKE $1 AND password LIKE $2;", [cookie.login, cookie.password], function(err, rows){ 
+            if (err){
+                console.log(err); 
+                return;
+            }
+            if(rows.rowCount == 0) {
+                res.end();
+            }
+            var role = rows.rows[0].role;            
+            if(role != "admin")
+            {
+                res.end("Нет доступа!");
+                data.info = 'Нет доступа к этой странице';       
+            }
+            else
+            {
+                data.haveAccess = true;
+                client.query("SELECT id, login FROM public.user WHERE role='employee';", function(err, rows){ 
+                    if (err){
+                        console.log(err); 
+                        return;
+                    }
+                    data.options_for_select = JSON.stringify(rows);
+
+                    client.query("SELECT list_of_problems.id, problem_desc, employee_id " +
+                                "FROM list_of_problems LEFT JOIN task_distrib ON (problem_id = list_of_problems.id) " +
+                                "WHERE is_done = false ORDER BY list_of_problems.id;", 
+                        function(err, rows){ 
+                            if (err){
+                                console.log(err); 
+                                return;
+                            }
+                            data.table_data = JSON.stringify(rows);
+                            res.end(JSON.stringify(data));
+                    });
+                });
+            }
+        });
+    }
+    else {
+        res.end("Нет доступа!");
+        data.info = 'Нет доступа к этой странице';
+    }
+}
+client.addNewProblem = function(data){
+    client.query("SELECT id, role FROM public.user WHERE login LIKE $1 AND password LIKE $2;", [data.login, data.password], function(err, rows){ 
+        if (err){
+            console.log(err); 
+            return;
+        }
+        user_id = rows.rows[0].id;
+        var message = data.message;
+        client.query("INSERT INTO list_of_problems VALUES(default, $1, $2, $3, $4, default);", [message.data.fio, user_id, message.data.phone, message.data.problem_desc],
+        function(err, rows){ 
+            if (err){ 
+                console.log(err);
+                return;
+            }
+        });
+    });
+}
 
 module.exports = client;
